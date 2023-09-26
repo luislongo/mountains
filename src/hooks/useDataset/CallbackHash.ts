@@ -1,7 +1,5 @@
 import { v4 as uuid } from "uuid";
-
-export type Callback<T> = (value: T) => void;
-
+import { Callback } from "./useDataset.types";
 export class CallbackHash<T> {
   listeners: Map<string, Callback<T>>;
 

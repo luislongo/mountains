@@ -1,46 +1,56 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { hm } from "./HeightMap";
+import { ImageArrayInput } from "./components/atoms/ImageArrayInput/ImageArrayInput";
+import { DatasetRangeInput } from "./components/atoms/RangeInput/DatasetRangeInput";
 import { createPlane } from "./createPlane";
 import { useDataset } from "./hooks/useDataset/useDataset";
 import "./index.css";
-import { VectorInput } from "./VectorInput";
+import stone1 from "./assets/textures/stone1.jpg";
+import stone2 from "./assets/textures/stone2.jpg";
+import stone3 from "./assets/textures/stone3.jpg";
+import { HeightMap } from "./HeightMap";
 
 const loader = new THREE.TextureLoader();
+const quadSize = 1 / 3;
+const segs = 30;
 
 function App() {
   const ref = useRef<HTMLDivElement>(null);
   const geoRef = useRef<THREE.BufferGeometry>();
   const matRef = useRef<THREE.MeshPhongMaterial>();
 
+  const initialValue = {
+    a0: 5,
+    aN: 2,
+    f0: 10,
+    fN: 12,
+    nrOfLayers: 1,
+    vector: { x: 0, y: 0 },
+  };
+
+  const hmRef = new HeightMap(initialValue);
   const { register, useOnValueChange } = useDataset<{
-    a0: string;
-    aN: string;
-    f0: string;
-    fN: string;
-    nrOfLayers: string;
-    texture?: File;
+    a0: number;
+    aN: number;
+    f0: number;
+    fN: number;
+    nrOfLayers: number;
+    texture?: number;
     vector: { x: number; y: number };
   }>({
-    initialValue: {
-      a0: "1",
-      aN: "1",
-      f0: "1",
-      fN: "1",
-      nrOfLayers: "1",
-      vector: { x: 0, y: 0 },
-    },
-    onChange: (dataset) => {
-      hm.setA0(Number(dataset.a0));
-      hm.setAN(Number(dataset.aN));
-      hm.setF0(Number(dataset.f0));
-      hm.setFN(Number(dataset.fN));
-      hm.setNrOfLayers(Number(dataset.nrOfLayers));
+    initialValue,
+    onChange: (d) => {
+      hmRef.setA0(Number(d.a0));
+      hmRef.setAN(Number(d.aN));
+      hmRef.setF0(Number(d.f0));
+      hmRef.setFN(Number(d.fN));
+      hmRef.setNrOfLayers(Number(d.nrOfLayers));
 
       const { vertices } = createPlane({
-        quadSize: 10 / 20,
-        segs: 30,
+        quadSize,
+        segs,
+        heightMap: hmRef,
       });
       const vertexBuffer = new Float32Array(vertices);
 
@@ -56,13 +66,17 @@ function App() {
   useOnValueChange("texture", (texture) => {
     if (texture && matRef.current) {
       matRef.current.map?.dispose();
-      matRef.current.map = loader.load(URL.createObjectURL(texture));
+      matRef.current.map = loader.load(texture);
       matRef.current.needsUpdate = true;
     }
   });
 
   useOnValueChange("vector", (vector) => {
     console.log("vector", vector);
+  });
+
+  useOnValueChange("fN", (fN) => {
+    console.log("fN", fN);
   });
 
   useEffect(() => {
@@ -77,11 +91,10 @@ function App() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     ref.current?.appendChild(renderer.domElement);
 
-    const size = 10;
-
     const { vertices, triangles, uvs } = createPlane({
-      quadSize: size / 40,
-      segs: 30,
+      quadSize,
+      segs,
+      heightMap: hmRef,
     });
     const vertexBuffer = new Float32Array(vertices);
     const uvBuffer = new Float32Array(uvs);
@@ -95,6 +108,7 @@ function App() {
     geometry.setAttribute("uv", new THREE.BufferAttribute(uvBuffer, 2));
     geometry.setIndex(new THREE.BufferAttribute(triangleBuffer, 1));
     geoRef.current = geometry;
+    geometry.computeVertexNormals();
 
     const material = new THREE.MeshPhongMaterial({
       color: 0xffffff,
@@ -117,6 +131,10 @@ function App() {
     light.position.set(0, 10, 10);
     scene.add(light);
 
+    const light2 = new THREE.DirectionalLight(0xffffff, 0.4);
+    light2.position.set(0, 10, -10);
+    scene.add(light2);
+
     const animate = () => {
       requestAnimationFrame(animate);
       renderer.render(scene, camera);
@@ -132,73 +150,48 @@ function App() {
 
   return (
     <div className="w-full h-full absolute">
-      <div className="absolute top-0 left-0 p-4 bg-red-50 z-10">
+      <div className="absolute top-0 left-0 p-4 bg-red-50 z-10 flex flex-col items-stretch">
         <ul>
-          <li>
-            <p>Nr of layers</p>
-            <input
-              type="range"
-              min={1}
-              max={30}
-              step={1}
-              {...register("nrOfLayers", (e) => e.target.value)}
-            />
-          </li>
-          <li>
-            <p>a0</p>
-            <input
-              type="range"
-              min={0}
-              max={20}
-              step={0.01}
-              {...register("a0", (e) => e.target.value)}
-            />
-          </li>
-          <li>
-            <p>aN</p>
-            <input
-              type="range"
-              min={0}
-              max={40}
-              step={0.01}
-              {...register("aN", (e) => e.target.value)}
-            />
-          </li>
-          <li>
-            <p>f0</p>
-            <input
-              type="range"
-              min={0}
-              max={30}
-              step={0.01}
-              {...register("f0", (e) => e.target.value)}
-            />
-          </li>
-          <li>
-            <p>fN</p>
-            <input
-              type="range"
-              min={0}
-              max={3}
-              step={0.01}
-              {...register("fN", (e) => e.target.value)}
-            />
-          </li>
-          <li>
-            <p>h0</p>
-            <input
-              type="file"
-              accept="image/png"
-              {...register(
-                "texture",
-                (e) => e.target.files?.[0],
-                () => ""
-              )}
-            />
-          </li>
-          <li>
-            <VectorInput {...register("vector", (e) => ({ x: e.x, y: e.y }))} />
-          </li>
+          <DatasetRangeInput
+            label="Nr of layers"
+            min={1}
+            max={100}
+            step={1}
+            {...register("nrOfLayers")}
+          />
+          <DatasetRangeInput
+            label="a0"
+            min={0}
+            max={20}
+            step={0.01}
+            {...register("a0")}
+          />
+          <DatasetRangeInput
+            label="aN"
+            min={0}
+            max={20}
+            step={0.01}
+            {...register("aN")}
+          />
+          <DatasetRangeInput
+            label="f0"
+            min={0}
+            max={3}
+            step={0.01}
+            {...register("f0")}
+          />
+          <DatasetRangeInput
+            label="fN"
+            min={0}
+            max={3}
+            step={0.01}
+            {...register("fN")}
+          />
+          <ImageArrayInput
+            label="Texture"
+            {...register("texture")}
+            data={[stone1, stone2, stone3]}
+          />
         </ul>
       </div>
       <div className="absolute top-0 left-0" ref={ref} />

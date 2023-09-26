@@ -1,19 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Callback, CallbackHash } from "./CallbackHash";
-
-type UseDatasetParams<T> = {
-  initialValue: T;
-  onChange?: (dataset: T) => void;
-};
-
-type Dataset = Record<string, unknown>;
-
-type RegisterReturn<D, K extends keyof D, I = D[K], V = string> = {
-  onChange: (value: I) => void;
-  value: V;
-};
-
-type CallbackMap<D> = { [K in keyof D]: CallbackHash<D[K]> };
+import { CallbackHash } from "./CallbackHash";
+import {
+  Dataset,
+  UseDatasetParams,
+  CallbackMap,
+  Callback,
+  RegisterReturn,
+} from "./useDataset.types";
 
 export const useDataset = <D extends Dataset>({
   initialValue,
@@ -47,7 +40,7 @@ export const useDataset = <D extends Dataset>({
     key: K,
     parser: (value: I) => D[K] = (value) => value as D[K],
     valueParser: ((value: D[K]) => V) | undefined = undefined
-  ): RegisterReturn<D, K, I, V> => {
+  ): RegisterReturn<I, V> => {
     const onChange = (value: I) => {
       setDataset((prev: D) => {
         const parsedValue = parser(value);
@@ -76,5 +69,6 @@ export const useDataset = <D extends Dataset>({
   return {
     register,
     useOnValueChange,
+    dataset,
   };
 };

@@ -1,11 +1,16 @@
-import { hm } from "./HeightMap";
+import { HeightMap } from "./HeightMap";
 
 type CreatePlaneParams = {
   segs: number;
   quadSize?: number;
+  heightMap: HeightMap;
 };
 
-export const createPlane = ({ segs, quadSize = 1 }: CreatePlaneParams) => {
+export const createPlane = ({
+  segs,
+  quadSize = 1,
+  heightMap,
+}: CreatePlaneParams) => {
   const triangles: number[] = [];
   const vertices: number[] = [];
   const uvs: number[] = [];
@@ -15,7 +20,7 @@ export const createPlane = ({ segs, quadSize = 1 }: CreatePlaneParams) => {
       const x = i * quadSize;
       const z = j * quadSize;
 
-      vertices.push(x, hm.get(x, z), z);
+      vertices.push(x, heightMap.get(x, z), z);
       uvs.push(i / segs, j / segs);
     }
   }
