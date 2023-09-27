@@ -82,7 +82,8 @@ vec3 calcNormal(vec2 coords) {
 }
 
 void main() {
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(tileSize * uv.x, calcHeight(uv), tileSize * uv.y, 1.f);
+    vec3 planeCoords = vec3(tileSize * (uv.x - 0.5f), calcHeight(uv), tileSize * (uv.y-0.5f));
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(planeCoords, 1.0f);
     vNormal = calcNormal(uv);
     vUv = uv;
 }

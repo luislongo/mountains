@@ -12,12 +12,13 @@ export const createScene = () => {
   const renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
 
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enablePan = false;
+
   camera.position.z = 10;
-  camera.position.y = 10;
+  camera.position.y = 2;
   camera.position.x = 10;
   camera.lookAt(0, 0, 0);
-
-  new OrbitControls(camera, renderer.domElement);
 
   const light = new THREE.DirectionalLight(0xffffff, 1);
   light.position.set(0, 10, 10);
