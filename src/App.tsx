@@ -153,7 +153,6 @@ function App() {
     const animate = () => {
       requestAnimationFrame(animate);
       material.uniforms.time = { value: performance.now() / 1000 };
-      plane.rotateY(0.001);
       renderer.render(scene, camera);
     };
 
