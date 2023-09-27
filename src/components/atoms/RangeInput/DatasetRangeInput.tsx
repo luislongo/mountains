@@ -28,6 +28,7 @@ export const DatasetRangeInput: React.FC<DatasetRangeInputProps> = ({
           type="number"
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
+          className="hide-arrows appearance-none focus:outline-none outline-none bg-transparent focus:bg-gray-200 w-14 text-sm"
           {...rest}
         />
       </div>

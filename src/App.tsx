@@ -6,19 +6,23 @@ import { DatasetRangeInput } from "./components/atoms/RangeInput/DatasetRangeInp
 import { createPlane } from "./createPlane";
 import { useDataset } from "./hooks/useDataset/useDataset";
 import "./index.css";
-import stone1 from "./assets/textures/stone1.jpg";
-import stone2 from "./assets/textures/stone2.jpg";
-import stone3 from "./assets/textures/stone3.jpg";
+import stone from "./assets/textures/stone.png";
+import ice from "./assets/textures/ice.jpg";
+import snow from "./assets/textures/snow.jpg";
+import grass from "./assets/textures/grass2.jpg";
 import { HeightMap } from "./HeightMap";
+import vertexShader from "./assets/shaders/vertexShader.glsl?raw";
+import fragmentShader from "./assets/shaders/fragmentShader.glsl?raw";
 
-const loader = new THREE.TextureLoader();
 const quadSize = 1 / 3;
 const segs = 30;
 
 function App() {
+  console.log(vertexShader);
+  console.log(fragmentShader);
   const ref = useRef<HTMLDivElement>(null);
   const geoRef = useRef<THREE.BufferGeometry>();
-  const matRef = useRef<THREE.MeshPhongMaterial>();
+  const matRef = useRef<THREE.ShaderMaterial>();
 
   const initialValue = {
     a0: 5,
@@ -27,6 +31,8 @@ function App() {
     fN: 12,
     nrOfLayers: 1,
     vector: { x: 0, y: 0 },
+    texture1: stone,
+    texture2: ice,
   };
 
   const hmRef = new HeightMap(initialValue);
@@ -36,8 +42,10 @@ function App() {
     f0: number;
     fN: number;
     nrOfLayers: number;
-    texture?: number;
+    texture?: string;
     vector: { x: number; y: number };
+    texture1: string;
+    texture2: string;
   }>({
     initialValue,
     onChange: (d) => {
@@ -63,20 +71,30 @@ function App() {
     },
   });
 
-  useOnValueChange("texture", (texture) => {
-    if (texture && matRef.current) {
-      matRef.current.map?.dispose();
-      matRef.current.map = loader.load(texture);
-      matRef.current.needsUpdate = true;
-    }
-  });
-
   useOnValueChange("vector", (vector) => {
     console.log("vector", vector);
   });
 
   useOnValueChange("fN", (fN) => {
     console.log("fN", fN);
+  });
+
+  useOnValueChange("texture1", (texture1) => {
+    console.log("texture1", texture1);
+    if (!matRef.current) return;
+
+    matRef.current.uniforms.texture1 = {
+      value: new THREE.TextureLoader().load(texture1),
+    };
+  });
+
+  useOnValueChange("texture2", (texture2) => {
+    console.log("texture2", texture2);
+    if (!matRef.current) return;
+
+    matRef.current.uniforms.texture2 = {
+      value: new THREE.TextureLoader().load(texture2),
+    };
   });
 
   useEffect(() => {
@@ -110,8 +128,20 @@ function App() {
     geoRef.current = geometry;
     geometry.computeVertexNormals();
 
-    const material = new THREE.MeshPhongMaterial({
-      color: 0xffffff,
+    const material = new THREE.ShaderMaterial({
+      glslVersion: THREE.GLSL3,
+      uniforms: {
+        texture1: {
+          value: new THREE.TextureLoader().load(initialValue.texture1),
+        },
+        texture2: {
+          value: new THREE.TextureLoader().load(initialValue.texture2),
+        },
+      },
+      vertexShader: vertexShader,
+      fragmentShader: fragmentShader,
+      wireframe: false,
+      wireframeLinewidth: 2,
       side: THREE.DoubleSide,
     });
 
@@ -135,8 +165,10 @@ function App() {
     light2.position.set(0, 10, -10);
     scene.add(light2);
 
+    renderer.setClearColor(0xffffff);
     const animate = () => {
       requestAnimationFrame(animate);
+      material.uniforms.time = { value: performance.now() / 1000 };
       renderer.render(scene, camera);
     };
 
@@ -150,12 +182,12 @@ function App() {
 
   return (
     <div className="w-full h-full absolute">
-      <div className="absolute top-0 left-0 p-4 bg-red-50 z-10 flex flex-col items-stretch">
+      <div className="absolute top-0 left-0 p-3 bg-gray-100 z-10 flex flex-col items-stretch">
         <ul>
           <DatasetRangeInput
             label="Nr of layers"
             min={1}
-            max={100}
+            max={6}
             step={1}
             {...register("nrOfLayers")}
           />
@@ -176,21 +208,26 @@ function App() {
           <DatasetRangeInput
             label="f0"
             min={0}
-            max={3}
+            max={100}
             step={0.01}
             {...register("f0")}
           />
           <DatasetRangeInput
             label="fN"
             min={0}
-            max={3}
+            max={1}
             step={0.01}
             {...register("fN")}
           />
           <ImageArrayInput
             label="Texture"
-            {...register("texture")}
-            data={[stone1, stone2, stone3]}
+            {...register("texture1")}
+            data={[grass, ice, snow, stone]}
+          />
+          <ImageArrayInput
+            label="Texture"
+            {...register("texture2")}
+            data={[grass, ice, snow, stone]}
           />
         </ul>
       </div>
