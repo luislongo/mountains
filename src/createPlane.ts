@@ -1,45 +1,62 @@
-import { HeightMap } from "./HeightMap";
+import * as THREE from "three";
+import vertexShader from "./assets/shaders/vertexShader.glsl?raw";
+import fragmentShader from "./assets/shaders/fragmentShader.glsl?raw";
 
-type CreatePlaneParams = {
-  segs: number;
-  quadSize?: number;
-  heightMap: HeightMap;
+export type CreatePlaneParams = {
+  triangles: number[];
+  uvs: number[];
+  uniforms: {
+    texture1: string;
+    texture2: string;
+    tileSize: number;
+    a0: number;
+    aN: number;
+    f0: number;
+    fN: number;
+    nrOfLayers: number;
+  };
 };
 
 export const createPlane = ({
-  segs,
-  quadSize = 1,
-  heightMap,
+  triangles,
+  uvs,
+  uniforms,
 }: CreatePlaneParams) => {
-  const triangles: number[] = [];
-  const vertices: number[] = [];
-  const uvs: number[] = [];
+  const uvBuffer = new Float32Array(uvs);
+  const triangleBuffer = new Uint32Array(triangles);
 
-  for (let i = 0; i < segs + 1; i++) {
-    for (let j = 0; j < segs + 1; j++) {
-      const x = i * quadSize;
-      const z = j * quadSize;
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("uv", new THREE.BufferAttribute(uvBuffer, 2));
+  geometry.setIndex(new THREE.BufferAttribute(triangleBuffer, 1));
+  geometry.computeVertexNormals();
 
-      vertices.push(x, heightMap.get(x, z), z);
-      uvs.push(i / segs, j / segs);
-    }
-  }
+  const material = new THREE.ShaderMaterial({
+    glslVersion: THREE.GLSL3,
+    uniforms: {
+      texture1: {
+        value: new THREE.TextureLoader().load(uniforms.texture1),
+      },
+      texture2: {
+        value: new THREE.TextureLoader().load(uniforms.texture2),
+      },
+      tileSize: { value: uniforms.tileSize },
+      a0: { value: uniforms.a0 },
+      aN: { value: uniforms.aN },
+      f0: { value: uniforms.f0 },
+      fN: { value: uniforms.fN },
+      nrOfLayers: { value: uniforms.nrOfLayers },
+    },
+    vertexShader: vertexShader,
+    fragmentShader: fragmentShader,
+    wireframe: false,
+    wireframeLinewidth: 2,
+  });
 
-  for (let i = 0; i < segs; i++) {
-    for (let j = 0; j < segs; j++) {
-      const a = i * (segs + 1) + j;
-      const b = a + segs + 1;
-      const c = b + 1;
-      const d = a + 1;
-
-      triangles.push(a, b, c);
-      triangles.push(c, d, a);
-    }
-  }
+  const plane = new THREE.Mesh(geometry, material);
 
   return {
-    triangles,
-    vertices,
-    uvs,
+    plane,
+    material,
+    geometry,
   };
 };
