@@ -25,12 +25,12 @@ function App() {
   const matRef = useRef<THREE.ShaderMaterial>();
 
   const initialValue = {
-    tileSize: 2,
+    tileSize: 10,
     a0: 5,
     aN: 2,
-    f0: 10,
-    fN: 12,
-    nrOfLayers: 1,
+    f0: 2,
+    fN: 3,
+    nrOfLayers: 5,
     vector: { x: 0, y: 0 },
     texture1: stone,
     texture2: ice,
@@ -51,58 +51,29 @@ function App() {
   }>({
     initialValue,
     onChange: (d) => {
-      hmRef.setA0(Number(d.a0));
-      hmRef.setAN(Number(d.aN));
-      hmRef.setF0(Number(d.f0));
-      hmRef.setFN(Number(d.fN));
-      hmRef.setNrOfLayers(Number(d.nrOfLayers));
+      if (!geoRef.current || !matRef.current) return;
 
-      const { vertices } = createPlane({
-        quadSize,
-        segs,
-        heightMap: hmRef,
-      });
-      const vertexBuffer = new Float32Array(vertices);
-
-      geoRef.current?.setAttribute(
-        "position",
-        new THREE.BufferAttribute(vertexBuffer, 3)
-      );
-
-      geoRef.current?.computeVertexNormals();
+      matRef.current.uniforms.tileSize.value = d.tileSize;
+      matRef.current.uniforms.a0.value = d.a0;
+      matRef.current.uniforms.aN.value = d.aN;
+      matRef.current.uniforms.f0.value = d.f0;
+      matRef.current.uniforms.fN.value = d.fN;
+      matRef.current.uniforms.nrOfLayers.value = d.nrOfLayers;
     },
   });
 
-  useOnValueChange("tileSize", (tileSize) => {
-    console.log("tileSize", tileSize);
+  useOnValueChange("texture1", (texture) => {
     if (!matRef.current) return;
-    matRef.current.uniforms.tileSize = { value: tileSize };
+    matRef.current.uniforms.texture1.value = new THREE.TextureLoader().load(
+      texture
+    );
   });
 
-  useOnValueChange("vector", (vector) => {
-    console.log("vector", vector);
-  });
-
-  useOnValueChange("fN", (fN) => {
-    console.log("fN", fN);
-  });
-
-  useOnValueChange("texture1", (texture1) => {
-    console.log("texture1", texture1);
+  useOnValueChange("texture2", (texture) => {
     if (!matRef.current) return;
-
-    matRef.current.uniforms.texture1 = {
-      value: new THREE.TextureLoader().load(texture1),
-    };
-  });
-
-  useOnValueChange("texture2", (texture2) => {
-    console.log("texture2", texture2);
-    if (!matRef.current) return;
-
-    matRef.current.uniforms.texture2 = {
-      value: new THREE.TextureLoader().load(texture2),
-    };
+    matRef.current.uniforms.texture2.value = new THREE.TextureLoader().load(
+      texture
+    );
   });
 
   useEffect(() => {
@@ -145,13 +116,17 @@ function App() {
         texture2: {
           value: new THREE.TextureLoader().load(initialValue.texture2),
         },
-        tileSize: { value: 2 },
+        tileSize: { value: initialValue.tileSize },
+        a0: { value: initialValue.a0 },
+        aN: { value: initialValue.aN },
+        f0: { value: initialValue.f0 },
+        fN: { value: initialValue.fN },
+        nrOfLayers: { value: initialValue.nrOfLayers },
       },
       vertexShader: vertexShader,
       fragmentShader: fragmentShader,
       wireframe: false,
       wireframeLinewidth: 2,
-      side: THREE.DoubleSide,
     });
 
     matRef.current = material;
@@ -178,6 +153,7 @@ function App() {
     const animate = () => {
       requestAnimationFrame(animate);
       material.uniforms.time = { value: performance.now() / 1000 };
+      plane.rotateY(0.001);
       renderer.render(scene, camera);
     };
 
@@ -223,15 +199,15 @@ function App() {
           />
           <DatasetRangeInput
             label="f0"
-            min={0}
-            max={100}
+            min={0.1}
+            max={3}
             step={0.01}
             {...register("f0")}
           />
           <DatasetRangeInput
             label="fN"
-            min={0}
-            max={1}
+            min={1}
+            max={3}
             step={0.01}
             {...register("fN")}
           />

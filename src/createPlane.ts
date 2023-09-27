@@ -32,8 +32,8 @@ export const createPlane = ({
       const c = b + 1;
       const d = a + 1;
 
-      triangles.push(a, b, c);
-      triangles.push(c, d, a);
+      triangles.push(a, c, b);
+      triangles.push(c, a, d);
     }
   }
 
