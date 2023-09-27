@@ -25,6 +25,7 @@ function App() {
   const matRef = useRef<THREE.ShaderMaterial>();
 
   const initialValue = {
+    tileSize: 2,
     a0: 5,
     aN: 2,
     f0: 10,
@@ -37,6 +38,7 @@ function App() {
 
   const hmRef = new HeightMap(initialValue);
   const { register, useOnValueChange } = useDataset<{
+    tileSize: number;
     a0: number;
     aN: number;
     f0: number;
@@ -69,6 +71,12 @@ function App() {
 
       geoRef.current?.computeVertexNormals();
     },
+  });
+
+  useOnValueChange("tileSize", (tileSize) => {
+    console.log("tileSize", tileSize);
+    if (!matRef.current) return;
+    matRef.current.uniforms.tileSize = { value: tileSize };
   });
 
   useOnValueChange("vector", (vector) => {
@@ -137,6 +145,7 @@ function App() {
         texture2: {
           value: new THREE.TextureLoader().load(initialValue.texture2),
         },
+        tileSize: { value: 2 },
       },
       vertexShader: vertexShader,
       fragmentShader: fragmentShader,
@@ -184,6 +193,13 @@ function App() {
     <div className="w-full h-full absolute">
       <div className="absolute top-0 left-0 p-3 bg-gray-100 z-10 flex flex-col items-stretch">
         <ul>
+          <DatasetRangeInput
+            label="Tile size"
+            min={0.1}
+            max={10}
+            step={0.1}
+            {...register("tileSize")}
+          />
           <DatasetRangeInput
             label="Nr of layers"
             min={1}
