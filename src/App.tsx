@@ -12,7 +12,7 @@ import { createScene } from "./createScene";
 import { useDataset } from "./hooks/useDataset/useDataset";
 import "./index.css";
 
-const segs = 60;
+const segs = 250;
 
 function App() {
   const ref = useRef<HTMLDivElement>(null);
@@ -28,7 +28,7 @@ function App() {
     nrOfLayers: 5,
     vector: { x: 0, y: 0 },
     texture1: stone,
-    texture2: ice,
+    texture2: snow,
   };
 
   const { register, useOnValueChange } = useDataset<{
@@ -149,12 +149,12 @@ function App() {
           <ImageArrayInput
             label="Texture"
             {...register("texture1")}
-            data={[grass, ice, snow, stone]}
+            data={[ice, stone]}
           />
           <ImageArrayInput
             label="Texture"
             {...register("texture2")}
-            data={[grass, ice, snow, stone]}
+            data={[grass, snow]}
           />
         </ul>
       </div>
