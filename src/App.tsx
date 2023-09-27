@@ -1,25 +1,20 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import grass from "./assets/textures/grass2.jpg";
+import ice from "./assets/textures/ice.jpg";
+import snow from "./assets/textures/snow.jpg";
+import stone from "./assets/textures/stone.png";
 import { ImageArrayInput } from "./components/atoms/ImageArrayInput/ImageArrayInput";
 import { DatasetRangeInput } from "./components/atoms/RangeInput/DatasetRangeInput";
 import { createPlane } from "./createPlane";
+import { createPlaneGeometry } from "./createPlaneGeometry";
+import { createScene } from "./createScene";
 import { useDataset } from "./hooks/useDataset/useDataset";
 import "./index.css";
-import stone from "./assets/textures/stone.png";
-import ice from "./assets/textures/ice.jpg";
-import snow from "./assets/textures/snow.jpg";
-import grass from "./assets/textures/grass2.jpg";
-import { HeightMap } from "./HeightMap";
-import vertexShader from "./assets/shaders/vertexShader.glsl?raw";
-import fragmentShader from "./assets/shaders/fragmentShader.glsl?raw";
 
-const quadSize = 1 / 3;
-const segs = 30;
+const segs = 60;
 
 function App() {
-  console.log(vertexShader);
-  console.log(fragmentShader);
   const ref = useRef<HTMLDivElement>(null);
   const geoRef = useRef<THREE.BufferGeometry>();
   const matRef = useRef<THREE.ShaderMaterial>();
@@ -36,7 +31,6 @@ function App() {
     texture2: ice,
   };
 
-  const hmRef = new HeightMap(initialValue);
   const { register, useOnValueChange } = useDataset<{
     tileSize: number;
     a0: number;
@@ -77,82 +71,24 @@ function App() {
   });
 
   useEffect(() => {
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(
-      75, // fov
-      window.innerWidth / window.innerHeight, // aspect
-      0.1, // near
-      1000 // far
-    );
-    const renderer = new THREE.WebGLRenderer();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    const { scene, camera, renderer } = createScene();
     ref.current?.appendChild(renderer.domElement);
 
-    const { vertices, triangles, uvs } = createPlane({
-      quadSize,
+    const { triangles, uvs } = createPlaneGeometry({
       segs,
-      heightMap: hmRef,
     });
-    const vertexBuffer = new Float32Array(vertices);
-    const uvBuffer = new Float32Array(uvs);
-    const triangleBuffer = new Uint32Array(triangles);
+    const { plane, material, geometry } = createPlane({
+      triangles,
+      uvs,
+      uniforms: { ...initialValue },
+    });
 
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute(
-      "position",
-      new THREE.BufferAttribute(vertexBuffer, 3)
-    );
-    geometry.setAttribute("uv", new THREE.BufferAttribute(uvBuffer, 2));
-    geometry.setIndex(new THREE.BufferAttribute(triangleBuffer, 1));
+    scene.add(plane);
     geoRef.current = geometry;
-    geometry.computeVertexNormals();
-
-    const material = new THREE.ShaderMaterial({
-      glslVersion: THREE.GLSL3,
-      uniforms: {
-        texture1: {
-          value: new THREE.TextureLoader().load(initialValue.texture1),
-        },
-        texture2: {
-          value: new THREE.TextureLoader().load(initialValue.texture2),
-        },
-        tileSize: { value: initialValue.tileSize },
-        a0: { value: initialValue.a0 },
-        aN: { value: initialValue.aN },
-        f0: { value: initialValue.f0 },
-        fN: { value: initialValue.fN },
-        nrOfLayers: { value: initialValue.nrOfLayers },
-      },
-      vertexShader: vertexShader,
-      fragmentShader: fragmentShader,
-      wireframe: false,
-      wireframeLinewidth: 2,
-    });
-
     matRef.current = material;
 
-    const plane = new THREE.Mesh(geometry, material);
-    scene.add(plane);
-
-    camera.position.z = 10;
-    camera.position.y = 10;
-    camera.position.x = 10;
-    camera.lookAt(0, 0, 0);
-
-    new OrbitControls(camera, renderer.domElement);
-
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(0, 10, 10);
-    scene.add(light);
-
-    const light2 = new THREE.DirectionalLight(0xffffff, 0.4);
-    light2.position.set(0, 10, -10);
-    scene.add(light2);
-
-    renderer.setClearColor(0xffffff);
     const animate = () => {
       requestAnimationFrame(animate);
-      material.uniforms.time = { value: performance.now() / 1000 };
       renderer.render(scene, camera);
     };
 
